@@ -128,12 +128,23 @@ export default function Dashboard() {
     return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`
   }
 
-  if (authLoading || (user && loading)) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
         <TopNav />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </main>
+      </div>
+    )
+  }
+
+  if (user && loading) {
+    return (
+      <div className="flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
+        <TopNav />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
         </main>
       </div>
     )

@@ -15,6 +15,7 @@ export default function Login() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
+      console.log('User logged in, redirecting to:', redirect)
       navigate(redirect, { replace: true })
     }
   }, [user, navigate, redirect])
@@ -26,7 +27,9 @@ export default function Login() {
       await login(username, password)
       toast.success('Login successful!')
       // Navigation will be handled by useEffect when user state updates
+      // The useEffect will trigger when user state changes
     } catch (error) {
+      console.error('Login error:', error)
       toast.error(error.response?.data?.detail || 'Login failed')
       setIsLoading(false)
     }

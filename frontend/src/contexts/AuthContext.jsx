@@ -51,16 +51,17 @@ export function AuthProvider({ children }) {
     
     // Fetch user and wait for it to complete
     try {
-      await fetchUser()
+      const userData = await fetchUser()
+      console.log('Login successful, user data:', userData)
+      return response.data
     } catch (error) {
       // If fetchUser fails, clean up and rethrow
+      console.error('Failed to fetch user after login:', error)
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       delete api.defaults.headers.common['Authorization']
       throw error
     }
-    
-    return response.data
   }
 
   const register = async (username, email, password) => {
