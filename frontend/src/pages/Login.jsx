@@ -6,19 +6,29 @@ import toast from 'react-hot-toast'
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const { login } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const { login, user } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate(redirect, { replace: true })
+    }
+  }, [user, navigate, redirect])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
     try {
       await login(username, password)
       toast.success('Login successful!')
-      navigate(redirect)
+      // Navigation will be handled by useEffect when user state updates
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Login failed')
+      setIsLoading(false)
     }
   }
 
@@ -55,9 +65,10 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+            disabled={isLoading}
+            className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
         <div className="mt-4 space-y-3">

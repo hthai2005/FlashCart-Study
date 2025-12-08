@@ -25,9 +25,14 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.get('/api/auth/me')
       setUser(response.data)
+      return response.data
     } catch (error) {
+      console.error('Failed to fetch user:', error)
       localStorage.removeItem('token')
+      localStorage.removeItem('username')
       delete api.defaults.headers.common['Authorization']
+      setUser(null)
+      throw error
     } finally {
       setLoading(false)
     }
@@ -43,7 +48,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token)
     localStorage.setItem('username', username)
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    await fetchUser()
+    
+    // Fetch user and wait for it to complete
+    try {
+      await fetchUser()
+    } catch (error) {
+      // If fetchUser fails, clean up and rethrow
+      localStorage.removeItem('token')
+      localStorage.removeItem('username')
+      delete api.defaults.headers.common['Authorization']
+      throw error
+    }
+    
     return response.data
   }
 
