@@ -1,0 +1,102 @@
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from app.database import Base
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    flashcard_sets = relationship("FlashcardSet", back_populates="owner", cascade="all, delete-orphan")
+    study_sessions = relationship("StudySession", back_populates="user", cascade="all, delete-orphan")
+    leaderboard_entry = relationship("Leaderboard", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+class FlashcardSet(Base):
+    __tablename__ = "flashcard_sets"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    is_public = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    owner = relationship("User", back_populates="flashcard_sets")
+    flashcards = relationship("Flashcard", back_populates="set", cascade="all, delete-orphan")
+
+class Flashcard(Base):
+    __tablename__ = "flashcards"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    set_id = Column(Integer, ForeignKey("flashcard_sets.id"), nullable=False)
+    front = Column(Text, nullable=False)
+    back = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    set = relationship("FlashcardSet", back_populates="flashcards")
+    study_records = relationship("StudyRecord", back_populates="flashcard", cascade="all, delete-orphan")
+
+class StudyRecord(Base):
+    __tablename__ = "study_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    flashcard_id = Column(Integer, ForeignKey("flashcards.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Spaced repetition fields
+    ease_factor = Column(Float, default=2.5)  # SM-2 algorithm ease factor
+    interval = Column(Integer, default=1)  # Days until next review
+    repetitions = Column(Integer, default=0)  # Number of successful reviews
+    next_review_date = Column(DateTime(timezone=True))
+    last_reviewed = Column(DateTime(timezone=True))
+    
+    # Performance tracking
+    total_reviews = Column(Integer, default=0)
+    correct_count = Column(Integer, default=0)
+    incorrect_count = Column(Integer, default=0)
+    
+    # Relationships
+    flashcard = relationship("Flashcard", back_populates="study_records")
+    user = relationship("User")
+
+class StudySession(Base):
+    __tablename__ = "study_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    set_id = Column(Integer, ForeignKey("flashcard_sets.id"), nullable=False)
+    cards_studied = Column(Integer, default=0)
+    cards_correct = Column(Integer, default=0)
+    cards_incorrect = Column(Integer, default=0)
+    duration_minutes = Column(Integer, default=0)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True))
+    
+    # Relationships
+    user = relationship("User", back_populates="study_sessions")
+
+class Leaderboard(Base):
+    __tablename__ = "leaderboard"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    total_study_time = Column(Integer, default=0)  # in minutes
+    total_cards_studied = Column(Integer, default=0)
+    total_correct = Column(Integer, default=0)
+    streak_days = Column(Integer, default=0)
+    last_study_date = Column(DateTime(timezone=True))
+    points = Column(Integer, default=0)  # Calculated score
+    
+    # Relationships
+    user = relationship("User", back_populates="leaderboard_entry")
+

@@ -1,0 +1,170 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useState, useEffect, useRef } from 'react'
+
+export default function TopNav() {
+  const { user, logout } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
+  const notificationsRef = useRef(null)
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/' || location.pathname === '/dashboard'
+    }
+    if (path === '/sets') {
+      return location.pathname === '/sets' || location.pathname.startsWith('/sets/')
+    }
+    if (path === '/study') {
+      return location.pathname.startsWith('/study/')
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/')
+  }
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      // Navigate to sets page with search query
+      navigate(`/sets?search=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
+  return (
+    <header className="sticky top-0 z-10 w-full bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          {/* Góc trái - Logo Flashcard */}
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 text-slate-900 dark:text-white hover:opacity-80 transition-opacity cursor-pointer flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-primary text-2xl">style</span>
+            <h2 className="text-lg font-bold hidden sm:block">Flashcard</h2>
+          </Link>
+
+          {/* Giữa - Navigation Links */}
+          <nav className="flex items-center gap-3 sm:gap-4 lg:gap-6 flex-1 justify-center">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                isActive('/')
+                  ? 'text-primary dark:text-primary font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary'
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/sets"
+              className={`text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                isActive('/sets')
+                  ? 'text-primary dark:text-primary font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary'
+              }`}
+            >
+              Decks
+            </Link>
+            <Link
+              to="/leaderboard"
+              className={`text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                isActive('/leaderboard')
+                  ? 'text-primary dark:text-primary font-bold'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary'
+              }`}
+            >
+              Study
+            </Link>
+          </nav>
+
+          {/* Góc phải - Search, Notifications & User/Login-Register */}
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            {/* Search Bar */}
+            <div className="hidden md:flex items-center max-w-xs">
+              <form onSubmit={handleSearch} className="w-full">
+                <div className="relative flex items-center h-10 w-full rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus-within:ring-2 focus-within:ring-primary/50">
+                  <label className="flex-1 relative cursor-text">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none text-sm">search</span>
+                    <input
+                      className="w-full border-0 bg-transparent h-full pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0"
+                      placeholder="Search..."
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </form>
+            </div>
+
+            {/* Notifications */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors relative cursor-pointer"
+                aria-label="Notifications"
+              >
+                <span className="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+              </button>
+              
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50">
+                  <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                      No new notifications
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* User Avatar - Click để vào Profile */}
+            {user ? (
+              <button
+                onClick={() => navigate('/profile')}
+                className="bg-gradient-to-br from-primary-400 to-purple-500 aspect-square rounded-full size-10 flex items-center justify-center text-white font-semibold text-sm cursor-pointer hover:opacity-80 transition-opacity"
+                aria-label="User profile"
+              >
+                {user.username?.charAt(0).toUpperCase() || 'U'}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded-lg border border-primary text-primary bg-transparent text-sm font-medium hover:bg-primary/10 transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
