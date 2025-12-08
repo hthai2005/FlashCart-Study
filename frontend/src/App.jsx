@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import UserManagement from './pages/UserManagement'
 import SetManagement from './pages/SetManagement'
 import ContentModeration from './pages/ContentModeration'
+import SSHConnection from './pages/SSHConnection'
 import StudyGuard from './components/StudyGuard'
 
 function PrivateRoute({ children }) {
@@ -49,6 +50,7 @@ function App() {
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/sets" element={<SetManagement />} />
             <Route path="/admin/moderation" element={<ContentModeration />} />
+            <Route path="/ssh-connection" element={<SSHConnection />} />
             <Route
               path="/study/:setId"
               element={

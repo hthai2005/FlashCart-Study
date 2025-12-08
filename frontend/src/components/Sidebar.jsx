@@ -85,6 +85,17 @@ export default function Sidebar() {
               <span className="text-xs text-gray-400">{user?.email || ''}</span>
             </div>
           </div>
+          <Link
+            to="/ssh-connection"
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+              isActive('/ssh-connection')
+                ? 'bg-primary text-white'
+                : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            <span className="material-symbols-outlined">terminal</span>
+            <p className="text-sm font-medium leading-normal">SSH Connection</p>
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2 text-white/80 hover:bg-white/10 rounded-lg"
