@@ -39,11 +39,10 @@ export function AuthProvider({ children }) {
   }
 
   const login = async (username, password) => {
-    const formData = new FormData()
-    formData.append('username', username)
-    formData.append('password', password)
-    
-    const response = await api.post('/api/auth/login', formData)
+    const response = await api.post('/api/auth/login', {
+      username,
+      password
+    })
     const token = response.data.access_token
     localStorage.setItem('token', token)
     localStorage.setItem('username', username)
