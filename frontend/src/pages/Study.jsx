@@ -18,12 +18,25 @@ export default function Study() {
   const [setInfo, setSetInfo] = useState(null)
   const [nextReview, setNextReview] = useState(null)
   const [totalCards, setTotalCards] = useState(0)
+  const [userAnswer, setUserAnswer] = useState('')
+  const [answerFeedback, setAnswerFeedback] = useState(null) // 'correct', 'incorrect', or null
+  const [wrongAttempts, setWrongAttempts] = useState(0)
 
   useEffect(() => {
     startSession()
     fetchSetInfo()
     fetchCards()
   }, [setId])
+
+  // Reset state when card changes
+  useEffect(() => {
+    if (cards.length > 0 && currentIndex < cards.length) {
+      setUserAnswer('')
+      setAnswerFeedback(null)
+      setWrongAttempts(0)
+      setShowAnswer(false)
+    }
+  }, [currentIndex, cards.length])
 
   const startSession = async () => {
     try {
@@ -87,12 +100,34 @@ export default function Study() {
     }
   }
 
-  const handleAnswer = async (quality) => {
-    if (!showAnswer) {
-      setShowAnswer(true)
-      return
-    }
+  const checkAnswer = () => {
+    const currentCard = cards[currentIndex]
+    if (!currentCard || !userAnswer.trim()) return
 
+    // Normalize answers for comparison (lowercase, trim, remove extra spaces)
+    const normalizedUserAnswer = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ')
+    const normalizedCorrectAnswer = currentCard.back.trim().toLowerCase().replace(/\s+/g, ' ')
+
+    // Check if answer is correct (exact match or contains the correct answer)
+    const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer || 
+                     normalizedCorrectAnswer.includes(normalizedUserAnswer) ||
+                     normalizedUserAnswer.includes(normalizedCorrectAnswer)
+
+    if (isCorrect) {
+      setAnswerFeedback('correct')
+      // Auto submit with quality 4 (good answer)
+      setTimeout(() => {
+        handleAnswer(4)
+      }, 1000)
+    } else {
+      setAnswerFeedback('incorrect')
+      setWrongAttempts(prev => prev + 1)
+      // Clear input for retry
+      setUserAnswer('')
+    }
+  }
+
+  const handleAnswer = async (quality) => {
     const currentCard = cards[currentIndex]
     if (!currentCard) return
 
@@ -124,40 +159,67 @@ export default function Study() {
           setCurrentIndex(currentIndex + 1)
           setShowAnswer(false)
           setNextReview(null)
+          setUserAnswer('')
+          setAnswerFeedback(null)
+          setWrongAttempts(0)
         } else {
           completeSession(newStats)
         }
-      }, 500)
+      }, 1500)
     } catch (error) {
       toast.error('Failed to submit answer')
     }
   }
 
+  const handleShowAnswer = () => {
+    setShowAnswer(true)
+    setAnswerFeedback(null)
+  }
+
+  // Reset state when card changes
+  useEffect(() => {
+    if (cards.length > 0 && currentIndex < cards.length) {
+      setUserAnswer('')
+      setAnswerFeedback(null)
+      setWrongAttempts(0)
+      setShowAnswer(false)
+    }
+  }, [currentIndex, cards.length])
+
   const completeSession = async (finalStats) => {
-    if (!sessionId) return
-    
     const duration = Math.floor((Date.now() - startTime) / 1000 / 60)
     
     try {
-      await api.put(`/api/study/sessions/${sessionId}`, {
-        cards_studied: finalStats.studied,
-        cards_correct: finalStats.correct,
-        cards_incorrect: finalStats.incorrect,
-        duration_minutes: duration
-      })
+      if (sessionId) {
+        await api.put(`/api/study/sessions/${sessionId}`, {
+          cards_studied: finalStats.studied,
+          cards_correct: finalStats.correct,
+          cards_incorrect: finalStats.incorrect,
+          duration_minutes: duration
+        })
+      }
       
-      toast.success('Study session completed!')
+      toast.success(`Study session completed! You studied ${finalStats.studied}/${cards.length} cards.`)
       setTimeout(() => {
         navigate('/dashboard')
       }, 2000)
     } catch (error) {
+      console.error('Error completing session:', error)
       toast.error('Failed to complete session')
+      // Still navigate even if API call fails
+      setTimeout(() => {
+        navigate('/dashboard')
+      }, 1000)
     }
   }
 
   const handleEndSession = async () => {
-    if (window.confirm('Are you sure you want to end this session?')) {
-      if (sessionId && stats.studied > 0) {
+    const progressMessage = stats.studied > 0 
+      ? `You have studied ${stats.studied}/${cards.length} cards (${Math.round((stats.studied / cards.length) * 100)}%). Do you want to end this session?`
+      : 'Are you sure you want to end this session?'
+    
+    if (window.confirm(progressMessage)) {
+      if (sessionId) {
         await completeSession(stats)
       } else {
         navigate('/dashboard')
@@ -185,7 +247,7 @@ export default function Study() {
   }
 
   const currentCard = cards[currentIndex]
-  const progressPercentage = totalCards > 0 ? (stats.studied / totalCards) * 100 : 0
+  const progressPercentage = cards.length > 0 ? (stats.studied / cards.length) * 100 : 0
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark">
@@ -210,12 +272,6 @@ export default function Study() {
               >
                 <span>End Session</span>
               </button>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center justify-center rounded-lg h-10 w-10 transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                <span className="material-symbols-outlined text-2xl">close</span>
-              </button>
             </div>
           </header>
         </div>
@@ -235,7 +291,7 @@ export default function Study() {
                 ></div>
               </div>
               <p className="text-gray-500 dark:text-gray-400 text-xs">
-                {stats.studied}/{totalCards} cards reviewed
+                {stats.studied}/{cards.length} cards reviewed
               </p>
             </div>
           </div>
@@ -243,27 +299,73 @@ export default function Study() {
           {/* Flashcard */}
           <div className="p-4">
             <div className="flex flex-col items-center justify-center rounded-xl shadow-lg bg-white dark:bg-[#1c1f27] min-h-[320px] p-8 text-center">
-              <div className="flex flex-col gap-4 items-center justify-center">
+              <div className="flex flex-col gap-4 items-center justify-center w-full">
+                {/* Front of card */}
+                <p className="text-gray-800 dark:text-white text-2xl font-bold tracking-tight">
+                  {currentCard?.front || 'Loading...'}
+                </p>
+
                 {!showAnswer ? (
                   <>
-                    <p className="text-gray-800 dark:text-white text-2xl font-bold tracking-tight">
-                      {currentCard?.front || 'Loading...'}
-                    </p>
-                    <p className="text-gray-500 dark:text-gray-400 text-base">
-                      Click 'Show Answer' to reveal.
-                    </p>
-                    <button
-                      onClick={() => setShowAnswer(true)}
-                      className="mt-4 flex min-w-[120px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-5 bg-primary text-white text-base font-bold leading-normal tracking-wide transition-colors hover:bg-primary/90"
-                    >
-                      <span>Show Answer</span>
-                    </button>
+                    {/* Answer Input */}
+                    <div className="w-full max-w-md flex flex-col gap-3">
+                      <input
+                        type="text"
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && userAnswer.trim()) {
+                            checkAnswer()
+                          }
+                        }}
+                        placeholder="Type your answer..."
+                        className={`w-full px-4 py-3 rounded-lg border-2 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                          answerFeedback === 'correct'
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                            : answerFeedback === 'incorrect'
+                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                        disabled={answerFeedback === 'correct'}
+                      />
+                      
+                      {/* Feedback */}
+                      {answerFeedback === 'correct' && (
+                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                          <span className="material-symbols-outlined">check_circle</span>
+                          <span className="font-medium">Correct!</span>
+                        </div>
+                      )}
+                      {answerFeedback === 'incorrect' && (
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                          <span className="material-symbols-outlined">cancel</span>
+                          <span className="font-medium">Incorrect. Try again!</span>
+                        </div>
+                      )}
+
+                      {/* Submit button */}
+                      <button
+                        onClick={checkAnswer}
+                        disabled={!userAnswer.trim() || answerFeedback === 'correct'}
+                        className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-base font-bold transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span>Check Answer</span>
+                      </button>
+
+                      {/* Show Answer button after wrong attempts */}
+                      {wrongAttempts >= 2 && (
+                        <button
+                          onClick={handleShowAnswer}
+                          className="flex items-center justify-center gap-2 rounded-lg h-10 px-5 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <span className="material-symbols-outlined">visibility</span>
+                          <span>Show Answer</span>
+                        </button>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-800 dark:text-white text-2xl font-bold tracking-tight">
-                      {currentCard?.front || 'Loading...'}
-                    </p>
                     <div className="w-full border-t border-gray-200 dark:border-gray-700 my-4"></div>
                     <p className="text-gray-800 dark:text-white text-xl font-semibold tracking-tight">
                       {currentCard?.back || 'Loading...'}
