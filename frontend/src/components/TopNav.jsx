@@ -90,6 +90,18 @@ export default function TopNav() {
             >
               Study
             </Link>
+            {user?.is_admin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  isActive('/admin')
+                    ? 'text-primary dark:text-primary font-bold'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* Góc phải - Search, Notifications & User/Login-Register */}

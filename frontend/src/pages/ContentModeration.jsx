@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import AdminSidebar from '../components/AdminSidebar'
 
 export default function ContentModeration() {
-  const { user, logout, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [reports, setReports] = useState([])
   const [selectedReport, setSelectedReport] = useState(null)
@@ -17,8 +16,6 @@ export default function ContentModeration() {
   useEffect(() => {
     if (user && !authLoading) {
       fetchReports()
-    } else if (!authLoading && !user) {
-      navigate('/login')
     }
   }, [user, authLoading, activeTab])
 
@@ -149,11 +146,6 @@ export default function ContentModeration() {
     // Navigate to edit page or open edit modal
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     const date = new Date(dateString)
@@ -219,66 +211,7 @@ export default function ContentModeration() {
       </header>
 
       <div className="flex h-[calc(100vh-4rem)] grow">
-        {/* SideNavBar */}
-        <aside className="flex w-64 shrink-0 flex-col justify-between border-r border-gray-200/10 dark:border-white/10 bg-background-light dark:bg-background-dark p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <a
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/admin')
-                }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-2xl">dashboard</span>
-                <p className="text-sm font-medium">Dashboard</p>
-              </a>
-              <a
-                onClick={(e) => {
-                  e.preventDefault()
-                }}
-                className="flex items-center gap-3 rounded-lg bg-primary/20 px-3 py-2 text-primary cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  gavel
-                </span>
-                <p className="text-sm font-bold">Content Moderation</p>
-              </a>
-              <a
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/admin/users')
-                }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-2xl">group</span>
-                <p className="text-sm font-medium">User Management</p>
-              </a>
-              <a
-                onClick={(e) => {
-                  e.preventDefault()
-                  toast.info('Settings coming soon!')
-                }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-2xl">settings</span>
-                <p className="text-sm font-medium">Settings</p>
-              </a>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                handleLogout()
-              }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-2xl">logout</span>
-              <p className="text-sm font-medium">Logout</p>
-            </a>
-          </div>
-        </aside>
+        <AdminSidebar />
 
         {/* Main Content Area */}
         <main className="flex flex-1 overflow-hidden">

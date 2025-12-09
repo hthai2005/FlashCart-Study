@@ -60,32 +60,182 @@ def create_sample_users():
         test_leaderboard = models.Leaderboard(user_id=test_user.id)
         db.add(test_leaderboard)
         
-        # 3. Tạo một flashcard set mẫu cho test user
-        sample_set = models.FlashcardSet(
+        # 3. Tạo nhiều flashcard sets mẫu cho test user
+        from datetime import datetime, timedelta, timezone
+        
+        # Set 1: Từ vựng tiếng Anh cơ bản
+        set1 = models.FlashcardSet(
             title="Từ vựng tiếng Anh cơ bản",
             description="Bộ flashcard học từ vựng tiếng Anh cơ bản",
             owner_id=test_user.id,
             is_public=True
         )
-        db.add(sample_set)
+        db.add(set1)
         db.flush()
         
-        # Thêm một số flashcards mẫu
-        sample_flashcards = [
+        set1_cards = [
             {"front": "Hello", "back": "Xin chào"},
             {"front": "Goodbye", "back": "Tạm biệt"},
             {"front": "Thank you", "back": "Cảm ơn"},
             {"front": "Please", "back": "Xin vui lòng"},
-            {"front": "Sorry", "back": "Xin lỗi"}
+            {"front": "Sorry", "back": "Xin lỗi"},
+            {"front": "Yes", "back": "Có"},
+            {"front": "No", "back": "Không"},
+            {"front": "Water", "back": "Nước"},
+            {"front": "Food", "back": "Thức ăn"},
+            {"front": "House", "back": "Ngôi nhà"}
         ]
         
-        for card_data in sample_flashcards:
+        set1_flashcards = []
+        for card_data in set1_cards:
             flashcard = models.Flashcard(
-                set_id=sample_set.id,
+                set_id=set1.id,
                 front=card_data["front"],
                 back=card_data["back"]
             )
             db.add(flashcard)
+            set1_flashcards.append(flashcard)
+        db.flush()
+        
+        # Set 2: Toán học cơ bản
+        set2 = models.FlashcardSet(
+            title="Toán học cơ bản",
+            description="Các công thức và khái niệm toán học cơ bản",
+            owner_id=test_user.id,
+            is_public=True
+        )
+        db.add(set2)
+        db.flush()
+        
+        set2_cards = [
+            {"front": "2 + 2 = ?", "back": "4"},
+            {"front": "5 × 3 = ?", "back": "15"},
+            {"front": "10 ÷ 2 = ?", "back": "5"},
+            {"front": "Diện tích hình vuông", "back": "Cạnh × Cạnh"},
+            {"front": "Chu vi hình chữ nhật", "back": "(Dài + Rộng) × 2"}
+        ]
+        
+        set2_flashcards = []
+        for card_data in set2_cards:
+            flashcard = models.Flashcard(
+                set_id=set2.id,
+                front=card_data["front"],
+                back=card_data["back"]
+            )
+            db.add(flashcard)
+            set2_flashcards.append(flashcard)
+        db.flush()
+        
+        # Set 3: Lịch sử Việt Nam
+        set3 = models.FlashcardSet(
+            title="Lịch sử Việt Nam",
+            description="Các sự kiện lịch sử quan trọng của Việt Nam",
+            owner_id=test_user.id,
+            is_public=False
+        )
+        db.add(set3)
+        db.flush()
+        
+        set3_cards = [
+            {"front": "Năm độc lập của Việt Nam", "back": "1945"},
+            {"front": "Chiến thắng Điện Biên Phủ", "back": "1954"},
+            {"front": "Ngày thống nhất đất nước", "back": "30/4/1975"},
+            {"front": "Thủ đô của Việt Nam", "back": "Hà Nội"}
+        ]
+        
+        set3_flashcards = []
+        for card_data in set3_cards:
+            flashcard = models.Flashcard(
+                set_id=set3.id,
+                front=card_data["front"],
+                back=card_data["back"]
+            )
+            db.add(flashcard)
+            set3_flashcards.append(flashcard)
+        db.flush()
+        
+        # 4. Tạo Study Records với dữ liệu học tập mẫu
+        now = datetime.now(timezone.utc)
+        
+        # Tạo study records cho set1 (đã học một số cards)
+        for i, card in enumerate(set1_flashcards[:7]):  # 7 cards đầu đã học
+            study_record = models.StudyRecord(
+                flashcard_id=card.id,
+                user_id=test_user.id,
+                ease_factor=2.5 + (i * 0.1),
+                interval=max(1, i),
+                repetitions=i + 1,
+                next_review_date=now + timedelta(days=i),
+                last_reviewed=now - timedelta(days=1),
+                total_reviews=i + 1,
+                correct_count=i + 1,
+                incorrect_count=0
+            )
+            db.add(study_record)
+        
+        # Tạo study records cho set2 (đã học một số cards)
+        for i, card in enumerate(set2_flashcards[:3]):  # 3 cards đầu đã học
+            study_record = models.StudyRecord(
+                flashcard_id=card.id,
+                user_id=test_user.id,
+                ease_factor=2.5,
+                interval=1,
+                repetitions=1,
+                next_review_date=now + timedelta(days=1),
+                last_reviewed=now - timedelta(hours=2),
+                total_reviews=1,
+                correct_count=1,
+                incorrect_count=0
+            )
+            db.add(study_record)
+        
+        # 5. Tạo Study Sessions mẫu
+        # Session 1: Học set1
+        session1 = models.StudySession(
+            user_id=test_user.id,
+            set_id=set1.id,
+            cards_studied=7,
+            cards_correct=6,
+            cards_incorrect=1,
+            duration_minutes=15,
+            started_at=now - timedelta(days=2),
+            completed_at=now - timedelta(days=2) + timedelta(minutes=15)
+        )
+        db.add(session1)
+        
+        # Session 2: Học set2
+        session2 = models.StudySession(
+            user_id=test_user.id,
+            set_id=set2.id,
+            cards_studied=3,
+            cards_correct=3,
+            cards_incorrect=0,
+            duration_minutes=10,
+            started_at=now - timedelta(hours=2),
+            completed_at=now - timedelta(hours=2) + timedelta(minutes=10)
+        )
+        db.add(session2)
+        
+        # Session 3: Học lại set1
+        session3 = models.StudySession(
+            user_id=test_user.id,
+            set_id=set1.id,
+            cards_studied=5,
+            cards_correct=5,
+            cards_incorrect=0,
+            duration_minutes=12,
+            started_at=now - timedelta(days=1),
+            completed_at=now - timedelta(days=1) + timedelta(minutes=12)
+        )
+        db.add(session3)
+        
+        # 6. Cập nhật Leaderboard với dữ liệu thực tế
+        test_leaderboard.total_study_time = 37  # 15 + 10 + 12 minutes
+        test_leaderboard.total_cards_studied = 15  # 7 + 3 + 5
+        test_leaderboard.total_correct = 14  # 6 + 3 + 5
+        test_leaderboard.streak_days = 3
+        test_leaderboard.last_study_date = now - timedelta(hours=2)
+        test_leaderboard.points = 150  # Điểm tính toán
         
         db.commit()
         

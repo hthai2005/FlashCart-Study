@@ -72,6 +72,19 @@ export default function Sidebar() {
               <span className="material-symbols-outlined">add_circle</span>
               <p className="text-sm font-medium leading-normal">Create New</p>
             </Link>
+            {user?.is_admin && (
+              <Link
+                to="/admin"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                  location.pathname.startsWith('/admin')
+                    ? 'bg-primary text-white'
+                    : 'text-white/80 hover:bg-white/10'
+                }`}
+              >
+                <span className="material-symbols-outlined">admin_panel_settings</span>
+                <p className="text-sm font-medium leading-normal">Admin Management</p>
+              </Link>
+            )}
           </nav>
         </div>
 

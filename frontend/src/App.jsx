@@ -31,6 +31,28 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />
 }
 
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth()
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    )
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" />
+  }
+  
+  if (!user.is_admin) {
+    return <Navigate to="/dashboard" />
+  }
+  
+  return children
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -46,10 +68,10 @@ function App() {
             <Route path="/sets/create" element={<CreateSet />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/achievements" element={<Achievements />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/sets" element={<SetManagement />} />
-            <Route path="/admin/moderation" element={<ContentModeration />} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+            <Route path="/admin/sets" element={<AdminRoute><SetManagement /></AdminRoute>} />
+            <Route path="/admin/moderation" element={<AdminRoute><ContentModeration /></AdminRoute>} />
             <Route path="/ssh-connection" element={<SSHConnection />} />
             <Route
               path="/study/:setId"

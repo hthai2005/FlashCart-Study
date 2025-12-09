@@ -2,7 +2,7 @@
 Spaced Repetition Algorithm (SM-2)
 Based on SuperMemo 2 algorithm
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 from sqlalchemy.orm import Session
 from app import models
@@ -39,7 +39,7 @@ def calculate_next_review(
     ease_factor = ease_factor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
     ease_factor = max(1.3, ease_factor)  # Minimum ease factor
     
-    next_review_date = datetime.utcnow() + timedelta(days=interval)
+    next_review_date = datetime.now(timezone.utc) + timedelta(days=interval)
     
     return ease_factor, interval, repetitions, next_review_date
 
@@ -60,7 +60,7 @@ def update_study_record(
     study_record.interval = interval
     study_record.repetitions = repetitions
     study_record.next_review_date = next_review_date
-    study_record.last_reviewed = datetime.utcnow()
+    study_record.last_reviewed = datetime.now(timezone.utc)
     study_record.total_reviews += 1
     
     if quality >= 3:
@@ -79,7 +79,7 @@ def get_cards_due_for_review(
     set_id: int
 ) -> list[models.Flashcard]:
     """Get flashcards that are due for review"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     # Get all flashcards in the set
     all_flashcards = db.query(models.Flashcard).filter(

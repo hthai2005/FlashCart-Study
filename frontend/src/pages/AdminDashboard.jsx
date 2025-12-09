@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import AdminSidebar from '../components/AdminSidebar'
 
 export default function AdminDashboard() {
-  const { user, logout, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -15,7 +14,6 @@ export default function AdminDashboard() {
     reportedItems: 0
   })
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('dashboard')
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -52,10 +50,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
 
   if (authLoading || loading) {
     return (
@@ -71,83 +65,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex h-screen w-full bg-background-light dark:bg-background-dark">
-      {/* SideNavBar */}
-      <aside className="flex w-64 flex-col bg-white dark:bg-[#1A2831] border-r border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="bg-primary p-2 rounded-lg text-white">
-            <span className="material-symbols-outlined">school</span>
-          </div>
-          <h1 className="text-xl font-bold text-gray-800 dark:text-white">Flashcard App</h1>
-        </div>
-
-        <nav className="flex flex-col gap-2 p-4 grow">
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveTab('dashboard')
-            }}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${
-              activeTab === 'dashboard'
-                ? 'bg-primary/20 text-primary'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
-            }`}
-          >
-            <span className="material-symbols-outlined">dashboard</span>
-            <p className="text-sm font-medium">Dashboard</p>
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/admin/users')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <span className="material-symbols-outlined">group</span>
-            <p className="text-sm font-medium">User Management</p>
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/admin/sets')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <span className="material-symbols-outlined">style</span>
-            <p className="text-sm font-medium">Flashcard Sets</p>
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/admin/moderation')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <span className="material-symbols-outlined">flag</span>
-            <p className="text-sm font-medium">Content Moderation</p>
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveTab('settings')
-              toast.info('Settings coming soon!')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <span className="material-symbols-outlined">settings</span>
-            <p className="text-sm font-medium">Settings</p>
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <a
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer"
-          >
-            <span className="material-symbols-outlined">logout</span>
-            <p className="text-sm font-medium">Logout</p>
-          </a>
-        </div>
-      </aside>
+      <AdminSidebar />
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-y-auto">

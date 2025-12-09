@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import AdminSidebar from '../components/AdminSidebar'
 
 export default function UserManagement() {
-  const { user, logout, loading: authLoading } = useAuth()
-  const navigate = useNavigate()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -15,14 +14,11 @@ export default function UserManagement() {
   const [selectedUsers, setSelectedUsers] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalUsers, setTotalUsers] = useState(0)
-  const [activeTab, setActiveTab] = useState('users')
   const usersPerPage = 5
 
   useEffect(() => {
     if (user && !authLoading) {
       fetchUsers()
-    } else if (!authLoading && !user) {
-      navigate('/login')
     }
   }, [user, authLoading, currentPage])
 
@@ -135,11 +131,6 @@ export default function UserManagement() {
     toast.info('Edit user functionality coming soon!')
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -173,101 +164,14 @@ export default function UserManagement() {
 
   return (
     <div className="relative flex min-h-screen w-full bg-background-light dark:bg-background-dark">
-      {/* SideNavBar */}
-      <aside className="flex w-64 flex-col bg-[#1c2327] p-4 text-white">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg text-white">
-              <span className="material-symbols-outlined">school</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-white text-base font-medium leading-normal">Admin Panel</h1>
-              <p className="text-[#9db0b9] text-sm font-normal leading-normal">Flashcard App</p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-2 mt-4">
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/admin')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">dashboard</span>
-              <p className="text-white text-sm font-medium leading-normal">Dashboard</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveTab('users')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
-                group
-              </span>
-              <p className="text-white text-sm font-medium leading-normal">User Management</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Content management coming soon!')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">book</span>
-              <p className="text-white text-sm font-medium leading-normal">Content</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Analytics coming soon!')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">bar_chart</span>
-              <p className="text-white text-sm font-medium leading-normal">Analytics</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Settings coming soon!')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">settings</span>
-              <p className="text-white text-sm font-medium leading-normal">Settings</p>
-            </a>
-          </nav>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-4">
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              toast.info('Help center coming soon!')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-white">help</span>
-            <p className="text-white text-sm font-medium leading-normal">Help Center</p>
-          </a>
-          <button
-            onClick={handleLogout}
-            className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-[#111618] text-sm font-bold leading-normal tracking-[0.015em]"
-          >
-            <span className="truncate">Logout</span>
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar />
 
       {/* Main Content */}
       <main className="flex-1 p-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col">
           {/* PageHeading */}
           <header className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+            <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
               User Management
             </h1>
             <button
@@ -285,11 +189,11 @@ export default function UserManagement() {
             <div className="flex-grow">
               <label className="flex flex-col min-w-40 h-12 w-full">
                 <div className="flex w-full flex-1 items-stretch rounded-lg h-full">
-                  <div className="text-[#9db0b9] flex border-none bg-[#283339] items-center justify-center pl-4 rounded-l-lg border-r-0">
+                  <div className="text-gray-500 dark:text-gray-400 flex border-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 items-center justify-center pl-4 rounded-l-lg border-r-0">
                     <span className="material-symbols-outlined">search</span>
                   </div>
                   <input
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#283339] focus:border-none h-full placeholder:text-[#9db0b9] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-l-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:border-primary h-full placeholder:text-gray-400 dark:placeholder:text-gray-500 px-4 rounded-l-none pl-2 text-base font-normal leading-normal"
                     placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -302,17 +206,17 @@ export default function UserManagement() {
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => toast.info('Role filter coming soon!')}
-                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#283339] px-4"
+                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <p className="text-white text-sm font-medium leading-normal">Role: {roleFilter}</p>
-                <span className="material-symbols-outlined text-white">arrow_drop_down</span>
+                <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Role: {roleFilter}</p>
+                <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">arrow_drop_down</span>
               </button>
               <button
                 onClick={() => toast.info('Status filter coming soon!')}
-                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-[#283339] px-4"
+                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-4 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                <p className="text-white text-sm font-medium leading-normal">Status: {statusFilter}</p>
-                <span className="material-symbols-outlined text-white">arrow_drop_down</span>
+                <p className="text-gray-900 dark:text-white text-sm font-medium leading-normal">Status: {statusFilter}</p>
+                <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">arrow_drop_down</span>
               </button>
               <button
                 onClick={() => {
@@ -320,7 +224,7 @@ export default function UserManagement() {
                   setRoleFilter('All')
                   setStatusFilter('All')
                 }}
-                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg border border-[#3b4b54] px-4 text-[#9db0b9] hover:bg-[#283339] hover:text-white"
+                className="flex h-12 shrink-0 items-center justify-center gap-x-2 rounded-lg border border-gray-300 dark:border-gray-600 px-4 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white"
               >
                 <span className="material-symbols-outlined">close</span>
                 <p className="text-sm font-medium leading-normal">Clear Filters</p>
@@ -330,32 +234,32 @@ export default function UserManagement() {
 
           {/* Table */}
           <div className="mt-6">
-            <div className="flex overflow-hidden rounded-lg border border-[#3b4b54] bg-[#111618]">
+            <div className="flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
               <table className="w-full text-left">
-                <thead className="bg-[#1c2327]">
+                <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="p-4 w-12 text-center">
                       <input
-                        className="h-5 w-5 rounded border-[#3b4b54] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0"
+                        className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0"
                         type="checkbox"
                         checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">
                       User
                     </th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">Role</th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">Role</th>
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">
                       Date Joined
                     </th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">
                       Last Active
                     </th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-white text-sm font-medium leading-normal">
+                    <th className="px-4 py-3 text-left text-gray-900 dark:text-white text-sm font-medium leading-normal">
                       Actions
                     </th>
                   </tr>
@@ -363,7 +267,7 @@ export default function UserManagement() {
                 <tbody>
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-[#9db0b9]">
+                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                         No users found
                       </td>
                     </tr>
@@ -371,66 +275,66 @@ export default function UserManagement() {
                     paginatedUsers.map((user) => (
                       <tr
                         key={user.id}
-                        className="border-t border-t-[#3b4b54] hover:bg-[#1c2327]"
+                        className="border-t border-t-gray-200 dark:border-t-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50"
                       >
                         <td className="p-4 text-center">
                           <input
-                            className="h-5 w-5 rounded border-[#3b4b54] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0"
+                            className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0"
                             type="checkbox"
                             checked={selectedUsers.includes(user.id)}
                             onChange={() => handleSelectUser(user.id)}
                           />
                         </td>
-                        <td className="px-4 py-3 text-white text-sm font-normal leading-normal">
+                        <td className="px-4 py-3 text-gray-900 dark:text-white text-sm font-normal leading-normal">
                           <div className="flex items-center gap-3">
                             <div className="bg-gradient-to-br from-primary-400 to-purple-500 aspect-square rounded-full size-8 flex items-center justify-center text-white text-xs font-semibold">
                               {user.full_name?.charAt(0).toUpperCase() || user.username?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
-                              <div>{user.full_name || user.username}</div>
-                              <div className="text-xs text-[#9db0b9]">{user.email}</div>
+                              <div className="text-gray-900 dark:text-white">{user.full_name || user.username}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-[#9db0b9] text-sm font-normal leading-normal">
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm font-normal leading-normal">
                           {user.role}
                         </td>
-                        <td className="px-4 py-3 text-[#9db0b9] text-sm font-normal leading-normal">
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm font-normal leading-normal">
                           {user.date_joined}
                         </td>
-                        <td className="px-4 py-3 text-[#9db0b9] text-sm font-normal leading-normal">
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm font-normal leading-normal">
                           {user.last_active}
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                               user.status === 'Active'
-                                ? 'bg-green-500/20 text-green-400'
+                                ? 'bg-green-500/20 text-green-600 dark:text-green-400'
                                 : user.status === 'Suspended'
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-red-500/20 text-red-400'
+                                ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+                                : 'bg-red-500/20 text-red-600 dark:text-red-400'
                             }`}
                           >
                             {user.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-[#9db0b9] text-sm leading-normal">
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm leading-normal">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleEdit(user.id)}
-                              className="p-1 rounded-md hover:bg-[#283339] hover:text-white"
+                              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <span className="material-symbols-outlined text-xl">edit</span>
                             </button>
                             <button
                               onClick={() => handleDelete(user.id)}
-                              className="p-1 rounded-md hover:bg-[#283339] hover:text-white"
+                              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <span className="material-symbols-outlined text-xl">delete</span>
                             </button>
                             <button
                               onClick={() => toast.info('More options coming soon!')}
-                              className="p-1 rounded-md hover:bg-[#283339] hover:text-white"
+                              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <span className="material-symbols-outlined text-xl">more_horiz</span>
                             </button>
@@ -446,14 +350,14 @@ export default function UserManagement() {
 
           {/* Pagination */}
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-[#9db0b9]">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Showing {(currentPage - 1) * usersPerPage + 1} to {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#3b4b54] text-[#9db0b9] hover:bg-[#283339] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-xl">chevron_left</span>
               </button>
@@ -464,10 +368,10 @@ export default function UserManagement() {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg border border-[#3b4b54] ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 ${
                       currentPage === page
-                        ? 'bg-primary text-[#111618]'
-                        : 'text-[#9db0b9] hover:bg-[#283339] hover:text-white'
+                        ? 'bg-primary text-white border-primary'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {page}
@@ -477,7 +381,7 @@ export default function UserManagement() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#3b4b54] text-[#9db0b9] hover:bg-[#283339] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined text-xl">chevron_right</span>
               </button>

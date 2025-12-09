@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
+import AdminSidebar from '../components/AdminSidebar'
 
 export default function SetManagement() {
   const { user, logout, loading: authLoading } = useAuth()
@@ -17,7 +18,6 @@ export default function SetManagement() {
     totalSets: 0,
     reportedSets: 0
   })
-  const [activeTab, setActiveTab] = useState('content')
   const setsPerPage = 5
 
   useEffect(() => {
@@ -121,11 +121,6 @@ export default function SetManagement() {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toISOString().split('T')[0]
@@ -157,92 +152,7 @@ export default function SetManagement() {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full bg-background-light dark:bg-background-dark overflow-x-hidden">
-      {/* SideNavBar */}
-      <aside className="flex w-64 flex-col bg-[#1c2327] p-4 text-white">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary p-2 rounded-lg text-white">
-              <span className="material-symbols-outlined">school</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-white text-base font-medium leading-normal">Admin Panel</h1>
-              <p className="text-[#9db0b9] text-sm font-normal leading-normal">Flashcard App</p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-2 mt-4">
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/admin')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">dashboard</span>
-              <p className="text-white text-sm font-medium leading-normal">Dashboard</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/admin/users')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">group</span>
-              <p className="text-white text-sm font-medium leading-normal">User Management</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                setActiveTab('content')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">book</span>
-              <p className="text-white text-sm font-medium leading-normal">Content</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Analytics coming soon!')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">bar_chart</span>
-              <p className="text-white text-sm font-medium leading-normal">Analytics</p>
-            </a>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                toast.info('Settings coming soon!')
-              }}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-white">settings</span>
-              <p className="text-white text-sm font-medium leading-normal">Settings</p>
-            </a>
-          </nav>
-        </div>
-
-        <div className="mt-auto flex flex-col gap-4">
-          <a
-            onClick={(e) => {
-              e.preventDefault()
-              toast.info('Help center coming soon!')
-            }}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#283339] cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-white">help</span>
-            <p className="text-white text-sm font-medium leading-normal">Help Center</p>
-          </a>
-          <button
-            onClick={handleLogout}
-            className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-[#111618] text-sm font-bold leading-normal tracking-[0.015em]"
-          >
-            <span className="truncate">Logout</span>
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar />
 
       {/* Main Content */}
       <main className="flex-1 px-4 sm:px-6 lg:px-10 flex flex-1 justify-center py-8">
