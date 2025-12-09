@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import UserManagement from './pages/UserManagement'
 import SetManagement from './pages/SetManagement'
 import ContentModeration from './pages/ContentModeration'
+import ViewSet from './pages/ViewSet'
 import SSHConnection from './pages/SSHConnection'
 import StudyGuard from './components/StudyGuard'
 
@@ -71,6 +72,8 @@ function App() {
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
             <Route path="/admin/sets" element={<AdminRoute><SetManagement /></AdminRoute>} />
+            <Route path="/admin/sets/:id" element={<AdminRoute><ViewSet /></AdminRoute>} />
+            <Route path="/sets/:id" element={<ViewSet />} />
             <Route path="/admin/moderation" element={<AdminRoute><ContentModeration /></AdminRoute>} />
             <Route path="/ssh-connection" element={<SSHConnection />} />
             <Route

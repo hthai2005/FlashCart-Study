@@ -16,6 +16,9 @@ export default function UserManagement() {
   const [totalUsers, setTotalUsers] = useState(0)
   const [showRoleDropdown, setShowRoleDropdown] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
+  const [editForm, setEditForm] = useState({ is_admin: false, is_active: true })
   const usersPerPage = 5
 
   useEffect(() => {
@@ -134,8 +137,30 @@ export default function UserManagement() {
     }
   }
 
-  const handleEdit = (userId) => {
-    toast.info('Edit user functionality coming soon!')
+  const handleEdit = (user) => {
+    setEditingUser(user)
+    setEditForm({
+      is_admin: user.is_admin || false,
+      is_active: user.is_active !== false
+    })
+    setShowEditModal(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return
+    
+    try {
+      await api.put(`/api/admin/users/${editingUser.id}`, {
+        is_admin: editForm.is_admin,
+        is_active: editForm.is_active
+      })
+      toast.success('User updated successfully')
+      setShowEditModal(false)
+      setEditingUser(null)
+      fetchUsers()
+    } catch (error) {
+      toast.error('Failed to update user')
+    }
   }
 
   const filteredUsers = users.filter(user => {
@@ -385,7 +410,7 @@ export default function UserManagement() {
                         <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm leading-normal">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleEdit(user.id)}
+                              onClick={() => handleEdit(user)}
                               className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             >
                               <span className="material-symbols-outlined text-xl">edit</span>
@@ -453,6 +478,94 @@ export default function UserManagement() {
           </div>
         </div>
       </main>
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit User</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingUser(null)
+                }}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={editingUser.username}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.is_admin}
+                    onChange={(e) => setEditForm({ ...editForm, is_admin: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Admin Role</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.is_active}
+                    onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active Status</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingUser(null)
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
