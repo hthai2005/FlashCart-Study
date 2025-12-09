@@ -65,6 +65,10 @@ export default function Study() {
       const response = await api.get(`/api/study/sets/${setId}/due`)
       if (response.data && response.data.length > 0) {
         setCards(response.data)
+        // Update totalCards if not already set
+        if (totalCards === 0) {
+          setTotalCards(response.data.length)
+        }
       } else {
         // If no cards due, try to get all cards from the set
         try {
@@ -85,6 +89,8 @@ export default function Study() {
               incorrect_count: 0
             }))
             setCards(cardsWithProgress)
+            // Update totalCards
+            setTotalCards(allCardsRes.data.length)
           } else {
             setCards([])
           }
@@ -214,9 +220,15 @@ export default function Study() {
   }
 
   const handleEndSession = async () => {
-    const progressMessage = stats.studied > 0 
-      ? `You have studied ${stats.studied}/${cards.length} cards (${Math.round((stats.studied / cards.length) * 100)}%). Do you want to end this session?`
-      : 'Are you sure you want to end this session?'
+    let progressMessage = 'Are you sure you want to end this session?'
+    
+    // Use totalCards if available, otherwise use cards.length
+    const totalCardsCount = totalCards > 0 ? totalCards : cards.length
+    
+    if (stats.studied > 0 && totalCardsCount > 0) {
+      const percentage = Math.round((stats.studied / totalCardsCount) * 100)
+      progressMessage = `You have studied ${stats.studied}/${totalCardsCount} cards (${percentage}%). Do you want to end this session?`
+    }
     
     if (window.confirm(progressMessage)) {
       if (sessionId) {
@@ -247,7 +259,9 @@ export default function Study() {
   }
 
   const currentCard = cards[currentIndex]
-  const progressPercentage = cards.length > 0 ? (stats.studied / cards.length) * 100 : 0
+  // Use totalCards if available, otherwise use cards.length for progress calculation
+  const totalCardsCount = totalCards > 0 ? totalCards : cards.length
+  const progressPercentage = totalCardsCount > 0 ? (stats.studied / totalCardsCount) * 100 : 0
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark">
@@ -291,7 +305,7 @@ export default function Study() {
                 ></div>
               </div>
               <p className="text-gray-500 dark:text-gray-400 text-xs">
-                {stats.studied}/{cards.length} cards reviewed
+                {stats.studied}/{totalCardsCount} cards reviewed
               </p>
             </div>
           </div>

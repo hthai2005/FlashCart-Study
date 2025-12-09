@@ -149,9 +149,14 @@ def complete_study_session(
     ).first()
     
     if leaderboard:
-        leaderboard.total_study_time += duration_minutes
-        leaderboard.total_cards_studied += cards_studied
-        leaderboard.total_correct += cards_correct
+        # Ensure values are not None
+        duration_minutes = session_data.duration_minutes or 0
+        cards_studied = session_data.cards_studied or 0
+        cards_correct = session_data.cards_correct or 0
+        
+        leaderboard.total_study_time = (leaderboard.total_study_time or 0) + duration_minutes
+        leaderboard.total_cards_studied = (leaderboard.total_cards_studied or 0) + cards_studied
+        leaderboard.total_correct = (leaderboard.total_correct or 0) + cards_correct
         
         # Calculate points (simple scoring system)
         leaderboard.points = (
@@ -200,6 +205,13 @@ def get_study_progress(
         models.StudyRecord.correct_count > 5
     ).count()
     
+    # Count total cards studied by this user (cards with at least one study record)
+    cards_studied_count = db.query(models.StudyRecord).filter(
+        models.StudyRecord.user_id == current_user.id,
+        models.StudyRecord.flashcard.has(models.Flashcard.set_id == set_id),
+        models.StudyRecord.total_reviews > 0
+    ).count()
+    
     # Get daily progress
     today = datetime.utcnow().date()
     today_sessions = db.query(models.StudySession).filter(
@@ -221,10 +233,38 @@ def get_study_progress(
         total_cards=total_cards,
         cards_to_review=cards_to_review,
         cards_mastered=mastered,
+        cards_studied=cards_studied_count,
         daily_goal=daily_goal,
         daily_progress=daily_progress,
         streak_days=streak_days
     )
+
+@router.get("/sets/last-studied")
+def get_last_studied_dates(
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get last studied date for all sets that the user has studied"""
+    # Get the most recent completed session for each set
+    sessions = db.query(
+        models.StudySession.set_id,
+        func.max(models.StudySession.completed_at).label('last_studied')
+    ).filter(
+        and_(
+            models.StudySession.user_id == current_user.id,
+            models.StudySession.completed_at.isnot(None)
+        )
+    ).group_by(
+        models.StudySession.set_id
+    ).all()
+    
+    # Convert to dictionary
+    result = {}
+    for session in sessions:
+        if session.last_studied:
+            result[session.set_id] = session.last_studied.isoformat()
+    
+    return result
 
 @router.get("/sessions/history", response_model=List[schemas.StudySessionDataPoint])
 def get_study_sessions_history(

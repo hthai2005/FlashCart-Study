@@ -498,6 +498,7 @@ export default function UserManagement() {
               </button>
             </div>
           </div>
+          </div>
         </div>
       </main>
 

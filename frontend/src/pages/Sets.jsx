@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import TopNav from '../components/TopNav'
 import api from '../services/api'
@@ -19,15 +19,137 @@ export default function Sets() {
   const [loading, setLoading] = useState(true)
   const [cardCounts, setCardCounts] = useState({})
   const [masteryData, setMasteryData] = useState({})
+  const [lastStudiedData, setLastStudiedData] = useState({}) // Store last studied date for each set
   const navigate = useNavigate()
+  const location = useLocation()
 
+  // Refresh data when component mounts or when navigating back from study page
   useEffect(() => {
     if (user && !authLoading) {
       fetchSets()
     } else if (!authLoading && !user) {
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [user, authLoading, location.pathname]) // Add location.pathname to refresh when navigating
+
+  // Refresh mastery and last studied when navigating back to /sets
+  useEffect(() => {
+    if (user && !authLoading && location.pathname === '/sets' && sets.length > 0) {
+      // Force refresh mastery and last studied data
+      const fetchMasteryAndLastStudied = async () => {
+        const mastery = {}
+        const lastStudied = {}
+        
+        // Initialize all sets with 0% mastery and null last studied
+        for (const set of sets) {
+          mastery[set.id] = 0
+          lastStudied[set.id] = null
+        }
+        
+        // Then fetch actual progress and last studied for each set
+        for (const set of sets) {
+          try {
+            // Fetch progress data
+            const progressRes = await api.get(`/api/study/progress/${set.id}`).catch(() => null)
+            if (progressRes && progressRes.data) {
+              const { total_cards, cards_studied } = progressRes.data
+              // Calculate mastery based on cards_studied (cards this user has studied) / total_cards
+              if (total_cards > 0 && cards_studied !== undefined) {
+                mastery[set.id] = Math.round((cards_studied / total_cards) * 100)
+              } else {
+                mastery[set.id] = 0
+              }
+            } else {
+              mastery[set.id] = 0
+            }
+          } catch (error) {
+            console.error(`Error fetching progress for set ${set.id}:`, error)
+            mastery[set.id] = 0
+          }
+        }
+        setMasteryData(mastery)
+        
+        // Fetch last studied dates for all sets at once
+        try {
+          const lastStudiedRes = await api.get('/api/study/sets/last-studied').catch(() => ({ data: {} }))
+          if (lastStudiedRes && lastStudiedRes.data) {
+            const lastStudiedMap = {}
+            for (const set of sets) {
+              if (lastStudiedRes.data[set.id]) {
+                lastStudiedMap[set.id] = new Date(lastStudiedRes.data[set.id])
+              } else {
+                lastStudiedMap[set.id] = null
+              }
+            }
+            setLastStudiedData(lastStudiedMap)
+          } else {
+            setLastStudiedData({})
+          }
+        } catch (error) {
+          console.error('Error fetching last studied dates:', error)
+          setLastStudiedData({})
+        }
+      }
+      fetchMasteryAndLastStudied()
+    }
+  }, [location.pathname, sets, user, authLoading])
+
+  // Also refresh when window gains focus (user might have studied in another tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && !authLoading && location.pathname === '/sets' && sets.length > 0) {
+        // Refresh mastery data when window gains focus
+        const fetchMasteryAndLastStudied = async () => {
+          const mastery = {}
+          const lastStudied = {}
+          
+          for (const set of sets) {
+            mastery[set.id] = 0
+            lastStudied[set.id] = null
+          }
+          
+          for (const set of sets) {
+            try {
+              const progressRes = await api.get(`/api/study/progress/${set.id}`).catch(() => null)
+              if (progressRes && progressRes.data) {
+                const { total_cards, cards_studied } = progressRes.data
+                if (total_cards > 0 && cards_studied !== undefined) {
+                  mastery[set.id] = Math.round((cards_studied / total_cards) * 100)
+                } else {
+                  mastery[set.id] = 0
+                }
+              } else {
+                mastery[set.id] = 0
+              }
+            } catch (error) {
+              mastery[set.id] = 0
+            }
+          }
+          setMasteryData(mastery)
+          
+          try {
+            const lastStudiedRes = await api.get('/api/study/sets/last-studied').catch(() => ({ data: {} }))
+            if (lastStudiedRes && lastStudiedRes.data) {
+              const lastStudiedMap = {}
+              for (const set of sets) {
+                if (lastStudiedRes.data[set.id]) {
+                  lastStudiedMap[set.id] = new Date(lastStudiedRes.data[set.id])
+                } else {
+                  lastStudiedMap[set.id] = null
+                }
+              }
+              setLastStudiedData(lastStudiedMap)
+            }
+          } catch (error) {
+            console.error('Error fetching last studied dates:', error)
+          }
+        }
+        fetchMasteryAndLastStudied()
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [user, authLoading, location.pathname, sets])
 
   useEffect(() => {
     const fetchCardCounts = async () => {
@@ -44,29 +166,77 @@ export default function Sets() {
     }
     if (sets.length > 0) {
       fetchCardCounts()
+    } else {
+      setCardCounts({})
     }
   }, [sets])
 
   useEffect(() => {
-    const fetchMastery = async () => {
+    const fetchMasteryAndLastStudied = async () => {
       const mastery = {}
+      const lastStudied = {}
+      
+      // Initialize all sets with 0% mastery and null last studied
+      for (const set of sets) {
+        mastery[set.id] = 0
+        lastStudied[set.id] = null
+      }
+      
+      // Then fetch actual progress and last studied for each set
       for (const set of sets) {
         try {
+          // Fetch progress data
           const progressRes = await api.get(`/api/study/progress/${set.id}`).catch(() => null)
           if (progressRes && progressRes.data) {
-            const { total_cards, cards_mastered } = progressRes.data
-            mastery[set.id] = total_cards > 0 ? Math.round((cards_mastered / total_cards) * 100) : 0
+            const { total_cards, cards_studied } = progressRes.data
+            // Calculate mastery based on cards_studied (cards this user has studied) / total_cards
+            if (total_cards > 0 && cards_studied !== undefined) {
+              mastery[set.id] = Math.round((cards_studied / total_cards) * 100)
+            } else {
+              // Deck exists but has no cards yet or user hasn't studied any - show 0%
+              mastery[set.id] = 0
+            }
           } else {
+            // No progress data - deck might be new or have no cards - show 0%
             mastery[set.id] = 0
           }
-        } catch {
+          
+          // Fetch last studied date will be done separately for all sets at once
+        } catch (error) {
+          // Error fetching progress - show 0%
+          console.error(`Error fetching progress for set ${set.id}:`, error)
           mastery[set.id] = 0
         }
       }
       setMasteryData(mastery)
+      
+      // Fetch last studied dates for all sets at once
+      try {
+        const lastStudiedRes = await api.get('/api/study/sets/last-studied').catch(() => ({ data: {} }))
+        if (lastStudiedRes && lastStudiedRes.data) {
+          const lastStudiedMap = {}
+          for (const set of sets) {
+            if (lastStudiedRes.data[set.id]) {
+              lastStudiedMap[set.id] = new Date(lastStudiedRes.data[set.id])
+            } else {
+              lastStudiedMap[set.id] = null
+            }
+          }
+          setLastStudiedData(lastStudiedMap)
+        } else {
+          setLastStudiedData({})
+        }
+      } catch (error) {
+        console.error('Error fetching last studied dates:', error)
+        setLastStudiedData({})
+      }
     }
     if (sets.length > 0) {
-      fetchMastery()
+      fetchMasteryAndLastStudied()
+    } else {
+      // If no sets, clear data
+      setMasteryData({})
+      setLastStudiedData({})
     }
   }, [sets])
 
@@ -153,8 +323,9 @@ export default function Sets() {
   }
 
   const getMasteryColor = (mastery) => {
-    if (mastery >= 80) return 'bg-green-500'
-    if (mastery >= 50) return 'bg-yellow-500'
+    const masteryValue = typeof mastery === 'number' ? mastery : 0
+    if (masteryValue >= 80) return 'bg-green-500'
+    if (masteryValue >= 50) return 'bg-yellow-500'
     return 'bg-red-500'
   }
 
@@ -168,7 +339,25 @@ export default function Sets() {
   } else if (sortBy === 'oldest') {
     sortedSets.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
   } else {
-    sortedSets.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+    // Sort by last studied: decks with study history first (most recent first), then decks never studied
+    sortedSets.sort((a, b) => {
+      const aLastStudied = lastStudiedData[a.id]
+      const bLastStudied = lastStudiedData[b.id]
+      
+      // If both have been studied, sort by most recent first
+      if (aLastStudied && bLastStudied) {
+        return bLastStudied - aLastStudied
+      }
+      // If only one has been studied, put it first
+      if (aLastStudied && !bLastStudied) {
+        return -1
+      }
+      if (!aLastStudied && bLastStudied) {
+        return 1
+      }
+      // If neither has been studied, sort by created_at (newest first)
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
   }
 
   if (authLoading || (user && loading)) {
@@ -270,7 +459,8 @@ export default function Sets() {
                 ) : (
                   sortedSets.map((set) => {
                     const cardCount = cardCounts[set.id] || 0
-                    const mastery = masteryData[set.id] || 0
+                    // Ensure mastery is always a number (0-100), default to 0 if not set
+                    const mastery = typeof masteryData[set.id] === 'number' ? masteryData[set.id] : 0
                     const masteryColor = getMasteryColor(mastery)
                     
                     return (
@@ -295,7 +485,7 @@ export default function Sets() {
                           <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                             <div
                               className={`${masteryColor} h-1.5 rounded-full transition-all`}
-                              style={{ width: `${mastery}%` }}
+                              style={{ width: `${Math.max(0, Math.min(100, mastery))}%` }}
                             ></div>
                           </div>
                         </div>

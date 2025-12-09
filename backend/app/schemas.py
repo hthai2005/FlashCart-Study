@@ -101,6 +101,7 @@ class StudyProgress(BaseModel):
     total_cards: int
     cards_to_review: int
     cards_mastered: int
+    cards_studied: int = 0  # Number of cards studied by this user
     daily_goal: int
     daily_progress: int
     streak_days: int
