@@ -66,8 +66,20 @@ export default function ViewSet() {
     return null
   }
 
-  if (!setInfo) {
-    return null
+  if (!setInfo && !loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background-light dark:bg-background-dark">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Flashcard set not found</p>
+          <button
+            onClick={() => navigate(isAdmin ? '/admin/sets' : '/sets')}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg"
+          >
+            Back to Sets
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
