@@ -56,3 +56,5 @@ except Exception as e:
     print("   3. Username và password trong .env đúng chưa?")
     print("   4. Port PostgreSQL đúng chưa? (mặc định: 5432)")
 
+
+

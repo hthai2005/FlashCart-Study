@@ -197,3 +197,5 @@ Bây giờ bạn đã có thể sử dụng ứng dụng Flashcard Study App!
 - Backend phải chạy trước khi frontend kết nối
 - Database SQLite sẽ tự động tạo khi chạy lần đầu
 
+
+
