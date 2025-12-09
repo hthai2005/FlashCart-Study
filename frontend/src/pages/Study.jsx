@@ -50,9 +50,40 @@ export default function Study() {
   const fetchCards = async () => {
     try {
       const response = await api.get(`/api/study/sets/${setId}/due`)
-      setCards(response.data)
+      if (response.data && response.data.length > 0) {
+        setCards(response.data)
+      } else {
+        // If no cards due, try to get all cards from the set
+        try {
+          const allCardsRes = await api.get(`/api/flashcards/sets/${setId}/cards`)
+          if (allCardsRes.data && allCardsRes.data.length > 0) {
+            // Convert to FlashcardWithProgress format
+            const cardsWithProgress = allCardsRes.data.map(card => ({
+              id: card.id,
+              set_id: card.set_id,
+              front: card.front,
+              back: card.back,
+              created_at: card.created_at,
+              ease_factor: 2.5,
+              interval: 1,
+              next_review_date: null,
+              total_reviews: 0,
+              correct_count: 0,
+              incorrect_count: 0
+            }))
+            setCards(cardsWithProgress)
+          } else {
+            setCards([])
+          }
+        } catch (err) {
+          console.error('Error fetching all cards:', err)
+          setCards([])
+        }
+      }
     } catch (error) {
+      console.error('Error fetching due cards:', error)
       toast.error('Failed to load flashcards')
+      setCards([])
     }
   }
 

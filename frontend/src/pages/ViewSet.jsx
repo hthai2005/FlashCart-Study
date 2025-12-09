@@ -31,24 +31,28 @@ export default function ViewSet() {
     try {
       setLoading(true)
       const [setRes, cardsRes] = await Promise.all([
-        api.get(`/api/flashcards/sets/${id}`).catch(() => ({ data: null })),
-        api.get(`/api/flashcards/sets/${id}/cards`).catch(() => ({ data: [] }))
+        api.get(`/api/flashcards/sets/${id}`).catch((err) => {
+          console.error('Error fetching set:', err)
+          return { data: null }
+        }),
+        api.get(`/api/flashcards/sets/${id}/cards`).catch((err) => {
+          console.error('Error fetching cards:', err)
+          return { data: [] }
+        })
       ])
 
       if (setRes.data) {
         setSetInfo(setRes.data)
+        setCards(cardsRes.data || [])
       } else {
-        toast.error('Flashcard set not found')
-        navigate(isAdmin ? '/admin/sets' : '/sets')
-        return
+        const errorMessage = setRes.error?.response?.data?.detail || 'Flashcard set not found'
+        toast.error(errorMessage)
+        // Don't navigate immediately, let user see the error
       }
-
-      setCards(cardsRes.data || [])
     } catch (error) {
       console.error('Error fetching set data:', error)
       const errorMessage = error.response?.data?.detail || 'Failed to load flashcard set'
       toast.error(errorMessage)
-      navigate(isAdmin ? '/admin/sets' : '/sets')
     } finally {
       setLoading(false)
     }
@@ -66,22 +70,6 @@ export default function ViewSet() {
     return null
   }
 
-  if (!setInfo && !loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background-light dark:bg-background-dark">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Flashcard set not found</p>
-          <button
-            onClick={() => navigate(isAdmin ? '/admin/sets' : '/sets')}
-            className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg"
-          >
-            Back to Sets
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="relative flex min-h-screen w-full bg-background-light dark:bg-background-dark">
       {isAdmin ? <AdminSidebar /> : <Sidebar />}
@@ -90,19 +78,30 @@ export default function ViewSet() {
       <main className={`flex-1 flex flex-col overflow-y-auto ${!isAdmin ? 'pt-20' : ''}`}>
         {isAdmin && <AdminHeader pageTitle={setInfo?.title || 'View Set'} />}
         <div className="p-8">
-          <div className="mx-auto flex w-full max-w-7xl flex-col">
-          {/* Header */}
-          <div className="mb-6">
-            <button
-              onClick={() => navigate(isAdmin ? '/admin/sets' : '/sets')}
-              className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-              <span>Back to Sets</span>
-            </button>
-            <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
-              {setInfo.title}
-            </h1>
+          {!setInfo ? (
+            <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center min-h-[400px]">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">Flashcard set not found</p>
+              <button
+                onClick={() => navigate(isAdmin ? '/admin/sets' : '/sets')}
+                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg"
+              >
+                Back to Sets
+              </button>
+            </div>
+          ) : (
+            <div className="mx-auto flex w-full max-w-7xl flex-col">
+            {/* Header */}
+            <div className="mb-6">
+              <button
+                onClick={() => navigate(isAdmin ? '/admin/sets' : '/sets')}
+                className="mb-4 flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+                <span>Back to Sets</span>
+              </button>
+              <h1 className="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">
+                {setInfo.title}
+              </h1>
             {setInfo.description && (
               <p className="mt-2 text-gray-600 dark:text-gray-400">{setInfo.description}</p>
             )}
@@ -146,8 +145,8 @@ export default function ViewSet() {
                 ))}
               </div>
             )}
-          </div>
-          </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -19,7 +19,17 @@ def get_cards_due_for_review(
     if not db_set:
         raise HTTPException(status_code=404, detail="Flashcard set not found")
     
+    # Check access permission
+    if not current_user.is_admin:
+        if db_set.owner_id != current_user.id and not db_set.is_public:
+            raise HTTPException(status_code=403, detail="Not authorized")
+    
     due_cards = spaced_repetition.get_cards_due_for_review(db, current_user.id, set_id)
+    
+    # If no cards are due, return all cards in the set (for new users or first-time study)
+    if not due_cards:
+        all_cards = db.query(models.Flashcard).filter(models.Flashcard.set_id == set_id).all()
+        due_cards = all_cards
     
     result = []
     for card in due_cards:
