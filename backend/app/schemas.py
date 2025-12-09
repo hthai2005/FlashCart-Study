@@ -115,6 +115,19 @@ class ImportRequest(BaseModel):
     set_id: int
     file_content: str  # CSV or JSON content
 
+# Chart schemas
+class StudySessionDataPoint(BaseModel):
+    date: str  # YYYY-MM-DD
+    cards_studied: int
+    cards_correct: int
+    accuracy: float
+    sessions_count: int
+
+class StudyActivityDataPoint(BaseModel):
+    date: str  # YYYY-MM-DD
+    cards_studied: int
+    intensity: int  # 0-4 for heatmap intensity
+
 # Auth schemas
 class Token(BaseModel):
     access_token: str

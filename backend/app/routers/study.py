@@ -1,7 +1,8 @@
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
 from app.database import get_db
 from app import models, schemas, auth, spaced_repetition
 
@@ -217,4 +218,122 @@ def get_study_progress(
         daily_progress=daily_progress,
         streak_days=streak_days
     )
+
+@router.get("/sessions/history", response_model=List[schemas.StudySessionDataPoint])
+def get_study_sessions_history(
+    days: int = 30,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get study sessions history for chart visualization"""
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=days)
+    
+    # Query sessions grouped by date
+    sessions = db.query(
+        func.date(models.StudySession.started_at).label('date'),
+        func.sum(models.StudySession.cards_studied).label('cards_studied'),
+        func.sum(models.StudySession.cards_correct).label('cards_correct'),
+        func.count(models.StudySession.id).label('sessions_count')
+    ).filter(
+        and_(
+            models.StudySession.user_id == current_user.id,
+            models.StudySession.completed_at.isnot(None),
+            func.date(models.StudySession.started_at) >= start_date,
+            func.date(models.StudySession.started_at) <= end_date
+        )
+    ).group_by(
+        func.date(models.StudySession.started_at)
+    ).order_by(
+        func.date(models.StudySession.started_at)
+    ).all()
+    
+    # Create a dictionary for quick lookup
+    sessions_dict = {}
+    for session in sessions:
+        date_str = session.date.strftime('%Y-%m-%d')
+        cards_studied = int(session.cards_studied or 0)
+        cards_correct = int(session.cards_correct or 0)
+        accuracy = (cards_correct / cards_studied * 100) if cards_studied > 0 else 0
+        
+        sessions_dict[date_str] = schemas.StudySessionDataPoint(
+            date=date_str,
+            cards_studied=cards_studied,
+            cards_correct=cards_correct,
+            accuracy=round(accuracy, 2),
+            sessions_count=int(session.sessions_count or 0)
+        )
+    
+    # Fill in missing dates with zero values
+    result = []
+    current_date = start_date
+    while current_date <= end_date:
+        date_str = current_date.strftime('%Y-%m-%d')
+        if date_str in sessions_dict:
+            result.append(sessions_dict[date_str])
+        else:
+            result.append(schemas.StudySessionDataPoint(
+                date=date_str,
+                cards_studied=0,
+                cards_correct=0,
+                accuracy=0.0,
+                sessions_count=0
+            ))
+        current_date += timedelta(days=1)
+    
+    return result
+
+@router.get("/activity", response_model=List[schemas.StudyActivityDataPoint])
+def get_study_activity(
+    days: int = 365,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get study activity data for heatmap calendar"""
+    end_date = datetime.utcnow().date()
+    start_date = end_date - timedelta(days=days)
+    
+    # Query sessions grouped by date
+    sessions = db.query(
+        func.date(models.StudySession.started_at).label('date'),
+        func.sum(models.StudySession.cards_studied).label('cards_studied')
+    ).filter(
+        and_(
+            models.StudySession.user_id == current_user.id,
+            models.StudySession.completed_at.isnot(None),
+            func.date(models.StudySession.started_at) >= start_date,
+            func.date(models.StudySession.started_at) <= end_date
+        )
+    ).group_by(
+        func.date(models.StudySession.started_at)
+    ).all()
+    
+    # Find max cards studied for intensity calculation
+    max_cards = max([int(s.cards_studied or 0) for s in sessions], default=1)
+    
+    # Create result
+    result = []
+    sessions_dict = {s.date.strftime('%Y-%m-%d'): int(s.cards_studied or 0) for s in sessions}
+    
+    current_date = start_date
+    while current_date <= end_date:
+        date_str = current_date.strftime('%Y-%m-%d')
+        cards_studied = sessions_dict.get(date_str, 0)
+        
+        # Calculate intensity (0-4) based on cards studied
+        if cards_studied == 0:
+            intensity = 0
+        elif max_cards > 0:
+            intensity = min(4, int((cards_studied / max_cards) * 4) + 1)
+        else:
+            intensity = 0
+        
+        result.append(schemas.StudyActivityDataPoint(
+            date=date_str,
+            cards_studied=cards_studied,
+            intensity=intensity
+        ))
+        current_date += timedelta(days=1)
+    
+    return result
 

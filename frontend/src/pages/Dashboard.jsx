@@ -4,6 +4,7 @@ import TopNav from '../components/TopNav'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth()
@@ -14,9 +15,13 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     streak: 0,
     totalMastered: 0,
-    accuracy: 0
+    accuracy: 0,
+    dailyGoal: 20,
+    dailyProgress: 0
   })
   const [deckProgress, setDeckProgress] = useState([])
+  const [studyHistory, setStudyHistory] = useState([])
+  const [studyActivity, setStudyActivity] = useState([])
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -25,14 +30,18 @@ export default function Dashboard() {
     } else if (!authLoading && !user) {
       setLoading(false)
     }
-  }, [user, authLoading])
+  }, [user, authLoading, timeFilter])
 
   const fetchData = async () => {
     try {
-      const [setsRes] = await Promise.all([
+      const [setsRes, historyRes, activityRes] = await Promise.all([
         api.get('/api/flashcards/sets'),
+        api.get('/api/study/sessions/history?days=' + (timeFilter === '7days' ? 7 : timeFilter === '30days' ? 30 : 365)).catch(() => ({ data: [] })),
+        api.get('/api/study/activity?days=365').catch(() => ({ data: [] }))
       ])
       setSets(setsRes.data)
+      setStudyHistory(historyRes.data || [])
+      setStudyActivity(activityRes.data || [])
       
       // Fetch progress for all sets
       const progressData = []
@@ -40,12 +49,14 @@ export default function Dashboard() {
       let totalCards = 0
       let correctAnswers = 0
       let totalAnswers = 0
+      let totalDailyProgress = 0
+      let dailyGoal = 20
 
       for (const set of setsRes.data) {
         try {
           const progressRes = await api.get(`/api/study/progress/${set.id}`).catch(() => null)
           if (progressRes && progressRes.data) {
-            const { total_cards, cards_mastered, cards_correct, cards_studied } = progressRes.data
+            const { total_cards, cards_mastered, cards_correct, cards_studied, daily_progress, daily_goal } = progressRes.data
             const mastery = total_cards > 0 ? Math.round((cards_mastered / total_cards) * 100) : 0
             const accuracy = cards_studied > 0 ? Math.round((cards_correct / cards_studied) * 100) : 0
             
@@ -53,6 +64,8 @@ export default function Dashboard() {
             totalCards += total_cards
             correctAnswers += cards_correct || 0
             totalAnswers += cards_studied || 0
+            totalDailyProgress += daily_progress || 0
+            if (daily_goal) dailyGoal = daily_goal
 
             progressData.push({
               id: set.id,
@@ -98,7 +111,9 @@ export default function Dashboard() {
       setStats({
         streak,
         totalMastered,
-        accuracy: overallAccuracy
+        accuracy: overallAccuracy,
+        dailyGoal,
+        dailyProgress: totalDailyProgress
       })
 
       if (setsRes.data.length > 0) {
@@ -164,7 +179,7 @@ export default function Dashboard() {
 
           {/* Stats Cards */}
           {user && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="flex flex-col gap-2 rounded-xl p-6 border border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
                 <p className="text-gray-600 dark:text-gray-300 text-base font-medium leading-normal">
                   Current Study Streak
@@ -187,6 +202,35 @@ export default function Dashboard() {
                 </p>
                 <p className="text-gray-900 dark:text-white tracking-light text-3xl font-bold leading-tight">
                   {stats.accuracy}%
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 rounded-xl p-6 border border-gray-200 dark:border-white/10 bg-white dark:bg-background-dark">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-gray-600 dark:text-gray-300 text-base font-medium leading-normal">
+                    Daily Goal
+                  </p>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold">
+                    {stats.dailyProgress} / {stats.dailyGoal}
+                  </p>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      (stats.dailyProgress / stats.dailyGoal) >= 1
+                        ? 'bg-green-500'
+                        : (stats.dailyProgress / stats.dailyGoal) >= 0.5
+                        ? 'bg-yellow-500'
+                        : 'bg-blue-500'
+                    }`}
+                    style={{
+                      width: `${Math.min((stats.dailyProgress / stats.dailyGoal) * 100, 100)}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                  {stats.dailyGoal - stats.dailyProgress > 0
+                    ? `${stats.dailyGoal - stats.dailyProgress} cards remaining`
+                    : 'Goal achieved! 🎉'}
                 </p>
               </div>
             </div>
@@ -250,10 +294,63 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="w-full h-80 flex items-center justify-center bg-gray-50 dark:bg-white/5 rounded-lg">
+              <div className="w-full h-80 bg-gray-50 dark:bg-white/5 rounded-lg p-4">
+                {studyHistory.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={studyHistory}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#6b7280"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                        tickFormatter={(value) => {
+                          const date = new Date(value)
+                          return `${date.getMonth() + 1}/${date.getDate()}`
+                        }}
+                      />
+                      <YAxis 
+                        stroke="#6b7280"
+                        tick={{ fill: '#6b7280', fontSize: 12 }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}
+                        labelFormatter={(value) => {
+                          const date = new Date(value)
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cards_studied" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2}
+                        name="Cards Studied"
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="cards_correct" 
+                        stroke="#10b981" 
+                        strokeWidth={2}
+                        name="Cards Correct"
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
                 <p className="text-gray-400 dark:text-gray-500 text-sm">
-                  Chart visualization coming soon
+                      No study data available yet
                 </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -265,20 +362,127 @@ export default function Dashboard() {
                 <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
                   Study Activity
                 </h2>
-                <div className="w-full h-80 flex items-center justify-center bg-gray-50 dark:bg-white/5 rounded-lg">
+                <div className="w-full h-80 bg-gray-50 dark:bg-white/5 rounded-lg p-4 overflow-auto">
+                  {studyActivity.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} className="text-xs text-gray-500 dark:text-gray-400 text-center font-medium">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {(() => {
+                          const bgColors = [
+                            'bg-gray-100 dark:bg-gray-800',
+                            'bg-green-200 dark:bg-green-900',
+                            'bg-green-400 dark:bg-green-700',
+                            'bg-green-600 dark:bg-green-600',
+                            'bg-green-800 dark:bg-green-500'
+                          ]
+                          
+                          return studyActivity.slice(-365).map((activity, index) => {
+                            const date = new Date(activity.date)
+                            const dayOfWeek = date.getDay()
+                            const intensity = activity.intensity
+                          
+                          // Align first day of year to correct day of week
+                          if (index === 0 && dayOfWeek !== 0) {
+                            return (
+                              <>
+                                {Array.from({ length: dayOfWeek }).map((_, i) => (
+                                  <div key={`empty-${i}`} className="aspect-square"></div>
+                                ))}
+                                <div
+                                  key={activity.date}
+                                  className={`aspect-square rounded ${bgColors[intensity]} cursor-pointer hover:ring-2 hover:ring-primary transition-all`}
+                                  title={`${activity.date}: ${activity.cards_studied} cards`}
+                                ></div>
+                              </>
+                            )
+                          }
+                          
+                          return (
+                            <div
+                              key={activity.date}
+                              className={`aspect-square rounded ${bgColors[intensity]} cursor-pointer hover:ring-2 hover:ring-primary transition-all`}
+                              title={`${activity.date}: ${activity.cards_studied} cards`}
+                            ></div>
+                          )
+                          })
+                        })()}
+                      </div>
+                      <div className="flex items-center justify-end gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400">
+                        <span>Less</span>
+                        <div className="flex gap-1">
+                          {[
+                            'bg-gray-100 dark:bg-gray-800',
+                            'bg-green-200 dark:bg-green-900',
+                            'bg-green-400 dark:bg-green-700',
+                            'bg-green-600 dark:bg-green-600',
+                            'bg-green-800 dark:bg-green-500'
+                          ].map((color, i) => (
+                            <div
+                              key={i}
+                              className={`w-3 h-3 rounded ${color}`}
+                            ></div>
+                          ))}
+                        </div>
+                        <span>More</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
                   <p className="text-gray-400 dark:text-gray-500 text-sm">
-                    Heatmap calendar coming soon
+                        No activity data available yet
                   </p>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-6 rounded-xl border border-gray-200 dark:border-white/10 p-6 bg-white dark:bg-background-dark">
                 <h2 className="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
                   Mastery by Deck
                 </h2>
-                <div className="w-full h-80 flex items-center justify-center bg-gray-50 dark:bg-white/5 rounded-lg">
+                <div className="w-full h-80 bg-gray-50 dark:bg-white/5 rounded-lg p-4">
+                  {deckProgress.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={deckProgress.map(deck => ({
+                            name: deck.name.length > 15 ? deck.name.substring(0, 15) + '...' : deck.name,
+                            value: deck.mastery
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {deckProgress.map((entry, index) => {
+                            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4']
+                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                          })}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
                   <p className="text-gray-400 dark:text-gray-500 text-sm">
-                    Donut chart coming soon
+                        No deck data available yet
                   </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
