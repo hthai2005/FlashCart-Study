@@ -219,10 +219,10 @@ export default function UserManagement() {
       <AdminHeader pageTitle="User Management" />
 
       <div className="flex h-[calc(100vh-4rem)] grow">
-        <AdminSidebar />
+      <AdminSidebar />
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-y-auto">
         <div className="p-8">
           <div className="mx-auto flex w-full max-w-7xl flex-col">
           {/* PageHeading */}
@@ -502,10 +502,10 @@ export default function UserManagement() {
           </div>
           </div>
         </div>
-        </main>
+      </main>
 
-        {/* Edit User Modal */}
-        {showEditModal && editingUser && (
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -592,7 +592,7 @@ export default function UserManagement() {
             </div>
           </div>
         </div>
-        )}
+      )}
       </div>
     </div>
   )

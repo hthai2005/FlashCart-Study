@@ -156,10 +156,10 @@ export default function SetManagement() {
       <AdminHeader pageTitle="Set Management" />
 
       <div className="flex h-[calc(100vh-4rem)] grow">
-        <AdminSidebar />
+      <AdminSidebar />
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-y-auto">
         <div className="px-4 sm:px-6 lg:px-10 py-8">
           <div className="flex flex-col w-full max-w-7xl flex-1 gap-8">
           {/* PageHeading */}
@@ -419,7 +419,7 @@ export default function SetManagement() {
           </div>
           </div>
         </div>
-        </main>
+      </main>
       </div>
     </div>
   )

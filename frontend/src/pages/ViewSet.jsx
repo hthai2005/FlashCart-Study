@@ -71,7 +71,7 @@ export default function ViewSet() {
   }
 
   if (isAdmin) {
-    return (
+  return (
       <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark">
         <AdminHeader pageTitle={setInfo?.title || 'View Set'} />
 

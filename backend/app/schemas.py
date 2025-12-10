@@ -13,7 +13,6 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
-    is_admin: bool = False
     created_at: datetime
     
     class Config:
@@ -52,15 +51,9 @@ class FlashcardSetBase(BaseModel):
 class FlashcardSetCreate(FlashcardSetBase):
     pass
 
-class FlashcardSetUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    is_public: Optional[bool] = None
-
 class FlashcardSetResponse(FlashcardSetBase):
     id: int
     owner_id: int
-    owner_username: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     
@@ -77,12 +70,6 @@ class StudyAnswer(BaseModel):
 
 class StudySessionCreate(BaseModel):
     set_id: int
-
-class StudySessionComplete(BaseModel):
-    cards_studied: int
-    cards_correct: int
-    cards_incorrect: int
-    duration_minutes: int
 
 class StudySessionResponse(BaseModel):
     id: int
@@ -102,7 +89,6 @@ class StudyProgress(BaseModel):
     total_cards: int
     cards_to_review: int
     cards_mastered: int
-    cards_studied: int = 0  # Number of cards studied by this user
     daily_goal: int
     daily_progress: int
     streak_days: int
@@ -128,19 +114,6 @@ class ImportRequest(BaseModel):
     set_id: int
     file_content: str  # CSV or JSON content
 
-# Chart schemas
-class StudySessionDataPoint(BaseModel):
-    date: str  # YYYY-MM-DD
-    cards_studied: int
-    cards_correct: int
-    accuracy: float
-    sessions_count: int
-
-class StudyActivityDataPoint(BaseModel):
-    date: str  # YYYY-MM-DD
-    cards_studied: int
-    intensity: int  # 0-4 for heatmap intensity
-
 # Auth schemas
 class Token(BaseModel):
     access_token: str
@@ -148,8 +121,4 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
 

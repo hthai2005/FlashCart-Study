@@ -71,10 +71,10 @@ export default function AdminDashboard() {
       <AdminHeader pageTitle="Dashboard" />
 
       <div className="flex h-[calc(100vh-4rem)] grow">
-        <AdminSidebar />
+      <AdminSidebar />
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-y-auto">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-y-auto">
 
         <div className="p-6 space-y-6">
           {/* Stats */}
@@ -276,7 +276,7 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-        </main>
+      </main>
       </div>
     </div>
   )
